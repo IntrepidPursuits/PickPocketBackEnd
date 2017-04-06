@@ -1,9 +1,0 @@
-Description: Lambda and API Gateway
-APIName: PickPocket Back End
-Lambdas:
-  - Lambda1:
-      FileName: FetchUsers
-      HttpMethod: GET
-  - Lambda2:
-      Filename: PickPocketGuess
-      HttpMethod: POST

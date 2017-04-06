@@ -1,4 +1,0 @@
-RestApi:
-  Type: AWS::ApiGateway::RestApi
-  Properties:
-    Name: Tuna Boys For Life
