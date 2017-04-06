@@ -1,6 +1,6 @@
   FunctionName:
     Properties:
-      Code: {ZipFile: }
+      Code: { ZipFile: }
       FunctionName:
       Handler: index.lambda_handler
       Role: <ROLE:ARN>
