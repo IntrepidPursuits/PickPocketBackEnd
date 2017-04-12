@@ -81,5 +81,5 @@ Below is a quick overview of the different lambda functions in this repository, 
 * `EditCombination` - Provide a token and new combination to change the lock associated with that user.
 * `PickPocket` This is a deprecated function and should not be used anymore. It does not require the token to pick a user.
 
-** Quirks **
+## Quirks
 When you first run the deployment script you may receive an error that there is no file `deploy.json`. This is due to a quick hack that first deletes the existing file if its there before running `concat_files.py.` It will hopefully be fixed in future updates. 
