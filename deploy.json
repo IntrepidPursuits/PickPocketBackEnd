@@ -1,0 +1,368 @@
+{
+    "Resources": {
+        "CreateUserBasicCLOUDFORM": {
+            "Properties": {
+                "Code": {
+                    "ZipFile": "import json\nimport boto3\nimport decimal\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"userId\" = \"JohnM\",\n    \"displayName\" = \"John Mack\",\n    \"combination\" = \"[1 2 3 4]\"\n\"\"\"\nvalidDigits = [1, 2, 3, 4, 5, 6]\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n    \n    userId = event['userId']\n    combination = event['combination']\n    \n    queryTable = table.query(KeyConditionExpression=Key('UserId').eq(userId))\n    \n    if (queryTable['Count'] != 0):\n        output[\"response\"] = \"USER_EXISTS\"\n        return output\n        \n    if (not validateCombination(combination)):\n        output[\"response\"] = \"INVALID_COMBINATION_FORMAT\"\n        return output\n    \n    if 'displayName' in event:\n        displayName = event['displayName']\n    else:\n        displayName = userId\n    \n    response = table.put_item(\n       Item={\n            'UserId': userId,\n            'DisplayName': displayName,\n            'Combination': combination,\n        }\n    )\n    \n    output = {}\n    output[\"response\"] = \"success\"\n    return output\n    \ndef validateCombination(combinationString):\n    try:\n        combinationParse = combinationString.split()\n        for digit in combinationParse:\n            if int(digit) not in validDigits:\n                print digit\n                return False\n        return True\n    except error:\n        return False"
+                },
+                "FunctionName": "CreateUserBasicCLOUDFORM",
+                "Handler": "index.lambda_handler",
+                "Role": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:iam::",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":role/pickPocketWriteAndSNS"
+                        ]
+                    ]
+                },
+                "Runtime": "python2.7"
+            },
+            "Type": "AWS::Lambda::Function"
+        },
+        "FetchUsersCLOUDFORM": {
+            "Properties": {
+                "Code": {
+                    "ZipFile": "import json\nimport boto3\nfrom boto3.dynamodb.conditions import Key, Attr\n\ndef lambda_handler(event, context):\n\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n\n    query = table.scan(AttributesToGet=[\n        'UserId', 'CombinationLength'\n    ])\n\n    query = query['Items']\n    \n    return {\n        'result': query\n    }"
+                },
+                "FunctionName": "FetchUsersCLOUDFORM",
+                "Handler": "index.lambda_handler",
+                "Role": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:iam::",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":role/pickPocketWriteAndSNS"
+                        ]
+                    ]
+                },
+                "Runtime": "python2.7"
+            },
+            "Type": "AWS::Lambda::Function"
+        },
+        "MethodCreateUserBasicCLOUDFORM": {
+            "DependsOn": [
+                "CreateUserBasicCLOUDFORM",
+                "PermissionCreateUserBasicCLOUDFORM"
+            ],
+            "Properties": {
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+                    "IntegrationResponses": [
+                        {
+                            "StatusCode": 200
+                        }
+                    ],
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                "lambda:path/2015-03-31/functions/arn:aws:lambda",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                {
+                                    "Ref": "AWS::AccountId"
+                                },
+                                ":function:",
+                                "CreateUserBasicCLOUDFORM",
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [
+                    {
+                        "StatusCode": 200
+                    }
+                ],
+                "ResourceId": {
+                    "Ref": "ResourceFetchUsersCLOUDFORM"
+                },
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+        "MethodFetchUsersCLOUDFORM": {
+            "DependsOn": [
+                "FetchUsersCLOUDFORM",
+                "ResourceFetchUsersCLOUDFORM",
+                "PermissionFetchUsersCLOUDFORM"
+            ],
+            "Properties": {
+                "AuthorizationType": "NONE",
+                "HttpMethod": "GET",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+                    "IntegrationResponses": [
+                        {
+                            "StatusCode": 200
+                        }
+                    ],
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                "lambda:path/2015-03-31/functions/arn:aws:lambda",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                {
+                                    "Ref": "AWS::AccountId"
+                                },
+                                ":function:",
+                                "FetchUsersCLOUDFORM",
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [
+                    {
+                        "StatusCode": 200
+                    }
+                ],
+                "ResourceId": {
+                    "Ref": "ResourceFetchUsersCLOUDFORM"
+                },
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+        "MethodUpdateCloudMessagingTokenCLOUDFORM": {
+            "DependsOn": [
+                "UpdateCloudMessagingTokenCLOUDFORM",
+                "ResourceUpdateCloudMessagingTokenCLOUDFORM",
+                "PermissionUpdateCloudMessagingTokenCLOUDFORM"
+            ],
+            "Properties": {
+                "AuthorizationType": "NONE",
+                "HttpMethod": "POST",
+                "Integration": {
+                    "IntegrationHttpMethod": "POST",
+                    "IntegrationResponses": [
+                        {
+                            "StatusCode": 200
+                        }
+                    ],
+                    "Type": "AWS",
+                    "Uri": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:apigateway",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                "lambda:path/2015-03-31/functions/arn:aws:lambda",
+                                ":",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":",
+                                {
+                                    "Ref": "AWS::AccountId"
+                                },
+                                ":function:",
+                                "UpdateCloudMessagingTokenCLOUDFORM",
+                                "/invocations"
+                            ]
+                        ]
+                    }
+                },
+                "MethodResponses": [
+                    {
+                        "StatusCode": 200
+                    }
+                ],
+                "ResourceId": {
+                    "Ref": "ResourceUpdateCloudMessagingTokenCLOUDFORM"
+                },
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Method"
+        },
+        "PermissionCreateUserBasicCLOUDFORM": {
+            "DependsOn": "CreateUserBasicCLOUDFORM",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": "CreateUserBasicCLOUDFORM",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",
+                            {
+                                "Ref": "RestApi"
+                            },
+                            "/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+        "PermissionFetchUsersCLOUDFORM": {
+            "DependsOn": "FetchUsersCLOUDFORM",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": "FetchUsersCLOUDFORM",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",
+                            {
+                                "Ref": "RestApi"
+                            },
+                            "/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+        "PermissionUpdateCloudMessagingTokenCLOUDFORM": {
+            "DependsOn": "UpdateCloudMessagingTokenCLOUDFORM",
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": "UpdateCloudMessagingTokenCLOUDFORM",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:execute-api:",
+                            {
+                                "Ref": "AWS::Region"
+                            },
+                            ":",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":",
+                            {
+                                "Ref": "RestApi"
+                            },
+                            "/*"
+                        ]
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+        "ResourceFetchUsersCLOUDFORM": {
+            "DependsOn": "FetchUsersCLOUDFORM",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "RestApi",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "users",
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+        "ResourceUpdateCloudMessagingTokenCLOUDFORM": {
+            "DependsOn": "UpdateCloudMessagingTokenCLOUDFORM",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "RestApi",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "push-token",
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+        "RestApi": {
+            "Properties": {
+                "Name": "Tuna Boys For Life"
+            },
+            "Type": "AWS::ApiGateway::RestApi"
+        },
+        "UpdateCloudMessagingTokenCLOUDFORM": {
+            "Properties": {
+                "Code": {
+                    "ZipFile": "import json\nimport boto3\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"token\" = \"pick pocket token\",\n    \"firebaseToken\" = \"Super Long Token\"\n\"\"\"\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n    \n    token = event['token']\n    firebaseToken = event['firebaseToken']\n    \n    queryTable = table.scan(FilterExpression=Key('Token').eq(token))\n        \n    if (queryTable['Count'] == 0):\n        output[\"response\"] = \"INVALID_AUTH_TOKEN\"\n        return output\n        \n    userId = queryTable['Items'][0]['UserId']\n\n    response = table.update_item(\n        Key={\n            'UserId': userId\n            },\n        UpdateExpression=\"set FirebaseToken = :t\",\n    ExpressionAttributeValues={\n        ':t': firebaseToken\n    },\n    ReturnValues=\"UPDATED_NEW\"\n    )\n    \n    output = {}\n    output[\"response\"] = \"success\"\n    return output"
+                },
+                "FunctionName": "UpdateCloudMessagingTokenCLOUDFORM",
+                "Handler": "index.lambda_handler",
+                "Role": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:iam::",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":role/pickPocketWriteAndSNS"
+                        ]
+                    ]
+                },
+                "Runtime": "python2.7"
+            },
+            "Type": "AWS::Lambda::Function"
+        }
+    }
+}

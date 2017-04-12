@@ -1,8 +1,0 @@
-  FunctionName:
-    Properties:
-      Code: {ZipFile: }
-      FunctionName:
-      Handler: index.lambda_handler
-      Role: <ROLE:ARN>
-      Runtime: python2.7
-    Type: AWS::Lambda::Function
