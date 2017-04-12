@@ -1,5 +1,8 @@
 from os import listdir
 import json
+import re
+from copy import deepcopy
+import random
 
 pythonFiles = [];
 PERMISSION = 'Permission'
@@ -48,17 +51,20 @@ for config in configJson['functions']:
             jsonOut[permissionName]['Properties']['SourceArn'] = SOURCE_ARN
 
             # Add Resource
-            if (config['api_path'] not in resourcePaths):
-                resourceTemplate = apiTemplateJSON[RESOURCE]
-                resourceName = RESOURCE + functionName
-                jsonOut[resourceName] = resourceTemplate
-                jsonOut[resourceName]['DependsOn'] = functionName
-                jsonOut[resourceName]['Properties']['PathPart'] = config['api_path']
-                resourcePaths.append(config['api_path'])
-                resourcePathExists = False
-            else:
-                # If the resource path is a repeat then we don't need to make two
-                resourcePathExists = True
+            paths = config['api_path'].split("/")
+            for path in paths:
+                if (path not in resourcePaths):
+                    resourceTemplate = apiTemplateJSON[RESOURCE]
+                    namePath = re.sub(r'\W+', '', path)
+                    resourceName = RESOURCE + functionName + namePath
+                    jsonOut[resourceName] = deepcopy(resourceTemplate)
+                    jsonOut[resourceName]['DependsOn'] = functionName
+                    jsonOut[resourceName]['Properties']['PathPart'] = path
+                    resourcePaths.append(path)
+                    resourcePathExists = False
+                else:
+                    # If the resource path is a repeat then we don't need to make two
+                    resourcePathExists = True
 
             # Add Method
             methodTemplate = apiTemplateJSON[METHOD]
@@ -77,6 +83,10 @@ for config in configJson['functions']:
 with open("deploy.json", "a") as f:
     with open("api_gateway_base.json") as baseTemplateFile:
         baseTemplateJSON = json.load(baseTemplateFile)
+        # TODO pull RestApi name from config file.
         jsonOut['RestApi'] = baseTemplateJSON['RestApi']
+        # TODO pull DB name from config file.
+        # TODO add DB dynamically 
+        #jsonOut['DB'] = baseTemplateJSON['DB']
         parentyaml['Resources'] = jsonOut
         json.dump(parentyaml, f, indent=4, sort_keys=True)

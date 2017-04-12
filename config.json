@@ -11,8 +11,8 @@
       "method":"POST"
     },
     {
-      "function":"UpdateCloudMessagingToken.py",
-      "api_path":"push-token",
+      "function":"PickLockUrl.py",
+      "api_path":"pick/{victim}",
       "method":"POST"
     }
   ]
