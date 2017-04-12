@@ -49,27 +49,6 @@ Once that is done call `deploy.sh` with the name you would like to use for the s
   ./deploy.sh STACKNAME
 ```
 
-Checkout this [link](https://docs.google.com/a/intrepid.io/document/d/1Wywului461Y45yPI0grVbXJd6oj6FukvSLCbRmFJaLw/edit?usp=sharing
-), which describes the game logic in more detail.
-
-These models are included in the starter project. Start by implementing the `submitGuess` function.
-```Java
-public class Lock {
-    public Result submitGuess(String guess) {
-        return null;
-    }
-}
-
-public class Result {
-    int numCorrect;
-    int numMisplaced;
-}
-```
-
-A completed `Lock` should be initialized with a code (you'll have to write this part). You can then get a `Result` back by submitting a guess `String`. The `Result` will contain hints for the correct and misplaced digits as per the rules.
-
-Write unit tests that verify that the game logic is working correctly, and you'll be all set with this part!
-
 ## Functions
 
 Below is a quick overview of the different lambda functions in this repository, for more information please refer to the individual files:
