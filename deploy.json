@@ -3,7 +3,7 @@
         "CreateUserBasicCLOUDFORM": {
             "Properties": {
                 "Code": {
-                    "ZipFile": "import json\nimport boto3\nimport decimal\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"userId\" = \"JohnM\",\n    \"displayName\" = \"John Mack\",\n    \"combination\" = \"[1 2 3 4]\"\n\"\"\"\nvalidDigits = [1, 2, 3, 4, 5, 6]\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n    \n    userId = event['userId']\n    combination = event['combination']\n    \n    queryTable = table.query(KeyConditionExpression=Key('UserId').eq(userId))\n    \n    if (queryTable['Count'] != 0):\n        output[\"response\"] = \"USER_EXISTS\"\n        return output\n        \n    if (not validateCombination(combination)):\n        output[\"response\"] = \"INVALID_COMBINATION_FORMAT\"\n        return output\n    \n    if 'displayName' in event:\n        displayName = event['displayName']\n    else:\n        displayName = userId\n    \n    response = table.put_item(\n       Item={\n            'UserId': userId,\n            'DisplayName': displayName,\n            'Combination': combination,\n        }\n    )\n    \n    output = {}\n    output[\"response\"] = \"success\"\n    return output\n    \ndef validateCombination(combinationString):\n    try:\n        combinationParse = combinationString.split()\n        for digit in combinationParse:\n            if int(digit) not in validDigits:\n                print digit\n                return False\n        return True\n    except error:\n        return False"
+                    "ZipFile": "import json\nimport boto3\nimport decimal\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"userId\":\"JohnM\",\n    \"displayName\":\"John Mack\",\n    \"combination\":\"[1,2,3,4]\"\n\"\"\"\nvalidDigits = [1, 2, 3, 4, 5, 6]\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocketBlog')\n\n    userId = event['userId']\n    combination = event['combination']\n    combination = json.loads(combination)\n\n    queryTable = table.query(KeyConditionExpression=Key('UserId').eq(userId))\n\n    if (queryTable['Count'] != 0):\n        output[\"response\"] = \"USER_EXISTS\"\n        return output\n\n    if (not validateCombination(combination)):\n        output[\"response\"] = \"INVALID_COMBINATION_FORMAT\"\n        return output\n\n    if 'displayName' in event:\n        displayName = event['displayName']\n    else:\n        displayName = userId\n\n    response = table.put_item(\n       Item={\n            'UserId': userId,\n            'DisplayName': displayName,\n            'Combination': combination,\n        }\n    )\n\n    output = {}\n    output[\"response\"] = \"success\"\n    return output\n\ndef validateCombination(combination):\n    try:\n        for digit in combination:\n            if int(digit) not in validDigits:\n                print digit\n                return False\n        return True\n    except:\n        return False\n"
                 },
                 "FunctionName": "CreateUserBasicCLOUDFORM",
                 "Handler": "index.lambda_handler",
@@ -22,6 +22,28 @@
                 "Runtime": "python2.7"
             },
             "Type": "AWS::Lambda::Function"
+        },
+        "DB": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "UserId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "UserId",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": "1",
+                    "WriteCapacityUnits": "1"
+                },
+                "TableName": "RestTestDB"
+            },
+            "Type": "AWS::DynamoDB::Table"
         },
         "FetchUsersCLOUDFORM": {
             "Properties": {
@@ -94,7 +116,7 @@
                     }
                 ],
                 "ResourceId": {
-                    "Ref": "ResourceFetchUsersCLOUDFORM"
+                    "Ref": "ResourceFetchUsersCLOUDFORMusers"
                 },
                 "RestApiId": {
                     "Ref": "RestApi"
@@ -105,7 +127,7 @@
         "MethodFetchUsersCLOUDFORM": {
             "DependsOn": [
                 "FetchUsersCLOUDFORM",
-                "ResourceFetchUsersCLOUDFORM",
+                "ResourceFetchUsersCLOUDFORMusers",
                 "PermissionFetchUsersCLOUDFORM"
             ],
             "Properties": {
@@ -151,7 +173,7 @@
                     }
                 ],
                 "ResourceId": {
-                    "Ref": "ResourceFetchUsersCLOUDFORM"
+                    "Ref": "ResourceFetchUsersCLOUDFORMusers"
                 },
                 "RestApiId": {
                     "Ref": "RestApi"
@@ -159,11 +181,11 @@
             },
             "Type": "AWS::ApiGateway::Method"
         },
-        "MethodUpdateCloudMessagingTokenCLOUDFORM": {
+        "MethodPickLockUrlCLOUDFORM": {
             "DependsOn": [
-                "UpdateCloudMessagingTokenCLOUDFORM",
-                "ResourceUpdateCloudMessagingTokenCLOUDFORM",
-                "PermissionUpdateCloudMessagingTokenCLOUDFORM"
+                "PickLockUrlCLOUDFORM",
+                "ResourcePickLockUrlCLOUDFORMvictim",
+                "PermissionPickLockUrlCLOUDFORM"
             ],
             "Properties": {
                 "AuthorizationType": "NONE",
@@ -196,7 +218,7 @@
                                     "Ref": "AWS::AccountId"
                                 },
                                 ":function:",
-                                "UpdateCloudMessagingTokenCLOUDFORM",
+                                "PickLockUrlCLOUDFORM",
                                 "/invocations"
                             ]
                         ]
@@ -208,7 +230,7 @@
                     }
                 ],
                 "ResourceId": {
-                    "Ref": "ResourceUpdateCloudMessagingTokenCLOUDFORM"
+                    "Ref": "ResourcePickLockUrlCLOUDFORMvictim"
                 },
                 "RestApiId": {
                     "Ref": "RestApi"
@@ -274,11 +296,11 @@
             },
             "Type": "AWS::Lambda::Permission"
         },
-        "PermissionUpdateCloudMessagingTokenCLOUDFORM": {
-            "DependsOn": "UpdateCloudMessagingTokenCLOUDFORM",
+        "PermissionPickLockUrlCLOUDFORM": {
+            "DependsOn": "PickLockUrlCLOUDFORM",
             "Properties": {
                 "Action": "lambda:InvokeFunction",
-                "FunctionName": "UpdateCloudMessagingTokenCLOUDFORM",
+                "FunctionName": "PickLockUrlCLOUDFORM",
                 "Principal": "apigateway.amazonaws.com",
                 "SourceArn": {
                     "Fn::Join": [
@@ -303,50 +325,12 @@
             },
             "Type": "AWS::Lambda::Permission"
         },
-        "ResourceFetchUsersCLOUDFORM": {
-            "DependsOn": "FetchUsersCLOUDFORM",
-            "Properties": {
-                "ParentId": {
-                    "Fn::GetAtt": [
-                        "RestApi",
-                        "RootResourceId"
-                    ]
-                },
-                "PathPart": "users",
-                "RestApiId": {
-                    "Ref": "RestApi"
-                }
-            },
-            "Type": "AWS::ApiGateway::Resource"
-        },
-        "ResourceUpdateCloudMessagingTokenCLOUDFORM": {
-            "DependsOn": "UpdateCloudMessagingTokenCLOUDFORM",
-            "Properties": {
-                "ParentId": {
-                    "Fn::GetAtt": [
-                        "RestApi",
-                        "RootResourceId"
-                    ]
-                },
-                "PathPart": "push-token",
-                "RestApiId": {
-                    "Ref": "RestApi"
-                }
-            },
-            "Type": "AWS::ApiGateway::Resource"
-        },
-        "RestApi": {
-            "Properties": {
-                "Name": "Tuna Boys For Life"
-            },
-            "Type": "AWS::ApiGateway::RestApi"
-        },
-        "UpdateCloudMessagingTokenCLOUDFORM": {
+        "PickLockUrlCLOUDFORM": {
             "Properties": {
                 "Code": {
-                    "ZipFile": "import json\nimport boto3\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"token\" = \"pick pocket token\",\n    \"firebaseToken\" = \"Super Long Token\"\n\"\"\"\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n    \n    token = event['token']\n    firebaseToken = event['firebaseToken']\n    \n    queryTable = table.scan(FilterExpression=Key('Token').eq(token))\n        \n    if (queryTable['Count'] == 0):\n        output[\"response\"] = \"INVALID_AUTH_TOKEN\"\n        return output\n        \n    userId = queryTable['Items'][0]['UserId']\n\n    response = table.update_item(\n        Key={\n            'UserId': userId\n            },\n        UpdateExpression=\"set FirebaseToken = :t\",\n    ExpressionAttributeValues={\n        ':t': firebaseToken\n    },\n    ReturnValues=\"UPDATED_NEW\"\n    )\n    \n    output = {}\n    output[\"response\"] = \"success\"\n    return output"
+                    "ZipFile": "import json\nimport boto3\nimport decimal\nfrom boto3.dynamodb.conditions import Key, Attr\n\n\"\"\"\nJSON Format:\n    \"userId\" = \"JohnM\",\n    \"displayName\" = \"John Mack\",\n    \"combination\" = \"[1 2 3 4]\"\n\"\"\"\nvalidDigits = [1, 2, 3, 4, 5, 6]\n\ndef lambda_handler(event, context):\n    output = {}\n    dynamodb = boto3.resource('dynamodb')\n    table = dynamodb.Table('PickPocket')\n    \n    userId = event['userId']\n    combination = event['combination']\n    \n    queryTable = table.query(KeyConditionExpression=Key('UserId').eq(userId))\n    \n    if (queryTable['Count'] != 0):\n        output[\"response\"] = \"USER_EXISTS\"\n        return output\n        \n    if (not validateCombination(combination)):\n        output[\"response\"] = \"INVALID_COMBINATION_FORMAT\"\n        return output\n    \n    if 'displayName' in event:\n        displayName = event['displayName']\n    else:\n        displayName = userId\n    \n    response = table.put_item(\n       Item={\n            'UserId': userId,\n            'DisplayName': displayName,\n            'Combination': combination,\n        }\n    )\n    \n    output = {}\n    output[\"response\"] = \"success\"\n    return output\n    \ndef validateCombination(combinationString):\n    try:\n        combinationParse = combinationString.split()\n        for digit in combinationParse:\n            if int(digit) not in validDigits:\n                print digit\n                return False\n        return True\n    except error:\n        return False"
                 },
-                "FunctionName": "UpdateCloudMessagingTokenCLOUDFORM",
+                "FunctionName": "PickLockUrlCLOUDFORM",
                 "Handler": "index.lambda_handler",
                 "Role": {
                     "Fn::Join": [
@@ -363,6 +347,60 @@
                 "Runtime": "python2.7"
             },
             "Type": "AWS::Lambda::Function"
+        },
+        "ResourceFetchUsersCLOUDFORMusers": {
+            "DependsOn": "FetchUsersCLOUDFORM",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "RestApi",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "users",
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+        "ResourcePickLockUrlCLOUDFORMpick": {
+            "DependsOn": "PickLockUrlCLOUDFORM",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "RestApi",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "pick",
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+        "ResourcePickLockUrlCLOUDFORMvictim": {
+            "DependsOn": "PickLockUrlCLOUDFORM",
+            "Properties": {
+                "ParentId": {
+                    "Fn::GetAtt": [
+                        "RestApi",
+                        "RootResourceId"
+                    ]
+                },
+                "PathPart": "{victim}",
+                "RestApiId": {
+                    "Ref": "RestApi"
+                }
+            },
+            "Type": "AWS::ApiGateway::Resource"
+        },
+        "RestApi": {
+            "Properties": {
+                "Name": "TestinThisOut"
+            },
+            "Type": "AWS::ApiGateway::RestApi"
         }
     }
 }

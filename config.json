@@ -1,4 +1,6 @@
 {
+  "DbName":"PickPocketProd",
+  "ApiName":"TestinThisOut",
   "functions" : [
     {
       "function":"FetchUsers.py",
@@ -6,7 +8,7 @@
       "method":"GET"
     },
     {
-      "function":"CreateUserBasic.py",
+      "function":"CreateUser.py",
       "api_path":"users",
       "method":"POST"
     },
