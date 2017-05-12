@@ -1,23 +1,24 @@
 import json
 import boto3
 import decimal
+import uuid
 from boto3.dynamodb.conditions import Key, Attr
 
 """
 JSON Format:
-    "userId":"JohnM",
-    "displayName":"John Mack",
-    "combination":"[1,2,3,4]"
+    "userId" = "JohnM",
+    "combination" = "[1 2 3 4]"
 """
 validDigits = [1, 2, 3, 4, 5, 6]
 
 def lambda_handler(event, context):
     output = {}
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('PickPocketBlog')
+    table = dynamodb.Table('PickPocketProd')
 
     userId = event['userId']
     combination = event['combination']
+
     combination = json.loads(combination)
 
     queryTable = table.query(KeyConditionExpression=Key('UserId').eq(userId))
@@ -30,21 +31,21 @@ def lambda_handler(event, context):
         output["response"] = "INVALID_COMBINATION_FORMAT"
         return output
 
-    if 'displayName' in event:
-        displayName = event['displayName']
-    else:
-        displayName = userId
+    combinationLength = len(combination)
+
+    token = str(uuid.uuid1())
 
     response = table.put_item(
        Item={
             'UserId': userId,
-            'DisplayName': displayName,
             'Combination': combination,
+            'CombinationLength': combinationLength,
+            'Token': token
         }
     )
 
     output = {}
-    output["response"] = "success"
+    output["response"] = token
     return output
 
 def validateCombination(combination):

@@ -1,5 +1,6 @@
 {
    "FunctionName": {
+     "DependsOn": "<LambdaPermission>",
       "Properties": {
          "Code": {
             "ZipFile": null
